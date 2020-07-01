@@ -13,7 +13,6 @@ use core::{
     mem::{self, ManuallyDrop},
     ptr::{self, NonNull},
 };
-use priority_queue::PriorityQueue;
 use std::collections::hash_map::{Entry as HashMapEntry, OccupiedEntry as HashMapOccupiedEntry};
 
 #[repr(C)]
@@ -251,14 +250,14 @@ impl<'tcell> WriteLog<'tcell> {
     #[inline]
     pub unsafe fn record_unchecked<T: 'static>(&mut self, dest_tcell: &'tcell TCellErased, val: T) {
         //LOCK SORTING
-        let mut q = PriorityQueue::new();
-        for lock in self.epoch_locks() {
-            let weight = std::mem::transmute::<&EpochLock, usize>(lock);
-            let _ = q.push(lock, weight);
-        }
+        let mut locks: Vec<&EpochLock> = self.epoch_locks().collect();
+        locks.sort_by(|x, y| {
+            std::mem::transmute::<&EpochLock, usize>(x)
+                .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
+        });
         debug_assert!(
-            q.into_sorted_iter()
-                .map(|tup| tup.0)
+            locks
+                .into_iter()
                 .find(|&x| ptr::eq(x, &dest_tcell.current_epoch))
                 .is_none(),
             "attempt to add `TCell` to the `WriteLog` twice"

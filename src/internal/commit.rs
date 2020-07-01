@@ -11,7 +11,6 @@ use core::{
     ptr::{self, NonNull},
     sync::atomic::{self, Ordering::Release},
 };
-use priority_queue::PriorityQueue;
 use swym_htm::{BoundedHtxErr, HardwareTx};
 
 const MAX_HTX_RETRIES: u8 = 3;
@@ -70,14 +69,13 @@ impl<'tcell> dyn WriteEntry + 'tcell {
 impl<'tcell> WriteLog<'tcell> {
     #[inline]
     unsafe fn publish(&self, sync_epoch: QuiesceEpoch) {
-        let mut q = PriorityQueue::new();
-        for lock in self.epoch_locks() {
-            let weight = std::mem::transmute::<&EpochLock, usize>(lock);
-            let _ = q.push(lock, weight);
-        }
-        let sorted_vec = q.into_sorted_vec();
-        sorted_vec
-            .into_iter()
+        let mut locks: Vec<&EpochLock> = self.epoch_locks().collect();
+        locks.sort_by(|x, y| {
+            std::mem::transmute::<&EpochLock, usize>(x)
+                .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
+        });
+        locks
+            .iter()
             .for_each(|epoch_lock| epoch_lock.unlock_publish(sync_epoch))
     }
 
@@ -204,12 +202,12 @@ impl<'tx, 'tcell> PinRw<'tx, 'tcell> {
         let mut unlock_until = None;
 
         //SORT LOCKS
-        let mut q = PriorityQueue::new();
-        for lock in logs.write_log.epoch_locks() {
-            let weight = unsafe { std::mem::transmute::<&EpochLock, usize>(lock) };
-            let _ = q.push(lock, weight);
-        }
-        for (epoch_lock, _) in q.into_sorted_iter() {
+        let mut locks: Vec<&EpochLock> = logs.write_log.epoch_locks().collect();
+        locks.sort_by(|x, y| unsafe {
+            std::mem::transmute::<&EpochLock, usize>(x)
+                .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
+        });
+        for epoch_lock in locks {
             match epoch_lock.try_lock(pin_epoch) {
                 Some(cur_status) => park_status = park_status.merge(cur_status),
                 None => {
