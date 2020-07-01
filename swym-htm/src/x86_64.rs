@@ -86,5 +86,6 @@ pub(super) unsafe fn end() {
 
 #[inline]
 pub(super) fn htm_supported() -> bool {
-    is_x86_feature_detected!("rtm")
+    //is_x86_feature_detected!("rtm")
+    false
 }
