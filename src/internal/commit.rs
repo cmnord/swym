@@ -12,6 +12,7 @@ use core::{
     sync::atomic::{self, Ordering::Release},
 };
 use swym_htm::{BoundedHtxErr, HardwareTx};
+use priority_queue::PriorityQueue;
 
 const MAX_HTX_RETRIES: u8 = 3;
 
@@ -69,7 +70,13 @@ impl<'tcell> dyn WriteEntry + 'tcell {
 impl<'tcell> WriteLog<'tcell> {
     #[inline]
     unsafe fn publish(&self, sync_epoch: QuiesceEpoch) {
-        self.epoch_locks()
+        let mut q = PriorityQueue::new();
+        for lock in self.epoch_locks(){
+            let weight = std::mem::transmute::<&EpochLock, usize>(lock);
+            q.push(lock, weight);
+        }
+        let sorted_vec = q.into_sorted_vec();
+        sorted_vec.iter()
             .for_each(|epoch_lock| epoch_lock.unlock_publish(sync_epoch))
     }
 
@@ -194,11 +201,19 @@ impl<'tx, 'tcell> PinRw<'tx, 'tcell> {
         let mut park_status = ParkStatus::NoParked;
         let pin_epoch = self.pin_epoch();
         let mut unlock_until = None;
-        for epoch_lock in logs.write_log.epoch_locks() {
+        
+        //SORT LOCKS
+        let mut q = PriorityQueue::new();
+        for lock in logs.write_log.epoch_locks(){
+            let weight = unsafe {std::mem::transmute::<&EpochLock, usize>(lock)};
+            q.push(lock, weight);
+        }
+        let sorted_vec = q.into_sorted_vec();
+        for epoch_lock in sorted_vec.iter() {
             match epoch_lock.try_lock(pin_epoch) {
                 Some(cur_status) => park_status = park_status.merge(cur_status),
                 None => {
-                    unlock_until = Some(epoch_lock as *const _);
+                    unlock_until = Some(*epoch_lock as *const _);
                     break;
                 }
             }
