@@ -40,17 +40,17 @@ mod multi_threaded_scaling {
                             let r: f64 = rng.gen(); // float between 0 and 1
                             if r < Y { // write
                                 scope.spawn(move |_| {
-				    let thread_key = thread_key::get();
-				    thread_key.rw(|tx| {
-					let next = buf_i.get(tx, Ordering::Read)? + 1;
-					Ok(buf_i.set(tx, next)?)
+                                        let thread_key = thread_key::get();
+                                        thread_key.rw(|tx| {
+                                        let next = buf_i.get(tx, Ordering::Read)? + 1;
+                                        Ok(buf_i.set(tx, next)?)
                                     })
                                 });
                             } else { // read
                                 scope.spawn(move |_| {
-				    let thread_key = thread_key::get();
-				    thread_key.read(|tx| {
-					Ok(buf_i.get(tx, Ordering::Read)?)
+                                    let thread_key = thread_key::get();
+                                    thread_key.read(|tx| {
+                                    Ok(buf_i.get(tx, Ordering::Read)?)
                                     })
                                 });
                             }
@@ -66,8 +66,7 @@ mod multi_threaded_scaling {
     }
 
     write_count! {
-        swym_write_001, 1, 1, 0.5
-	/*
+        swym_write_001, 1, 1, 0.5;
         swym_write_002, 2, 2, 0.5;
         swym_write_004, 4, 4, 0.5;
         swym_write_008, 8, 8, 0.5;
@@ -85,6 +84,5 @@ mod multi_threaded_scaling {
         swym_write_128, 128, 128, 0.5;
         swym_write_256, 256, 256, 0.5;
         swym_write_512, 512, 51, 0.5
-	*/
     }
 }
