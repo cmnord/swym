@@ -154,13 +154,13 @@ impl<T> TCell<T> {
     }
 
     #[inline]
-    pub fn view<'tcell, Tx>(&'tcell self, transaction: Tx) -> View<'tcell, T, Tx>
+    pub fn view<'tcell, Tx>(&'tcell self, r#transaction: Tx) -> View<'tcell, T, Tx>
     where
         Tx: Deref,
         Tx::Target: Read<'tcell> + Sized,
     {
         View {
-            tx:    transaction,
+            tx: r#transaction,
             tcell: self,
         }
     }
