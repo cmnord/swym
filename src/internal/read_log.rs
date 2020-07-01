@@ -11,8 +11,8 @@ use crate::{
     },
     stats,
 };
-use swym_htm::HardwareTx;
 use priority_queue::PriorityQueue;
+use swym_htm::HardwareTx;
 
 const READ_CAPACITY: usize = 0;
 
@@ -90,9 +90,9 @@ impl<'tcell> ReadLog<'tcell> {
     #[inline]
     pub fn validate_reads(&self, pin_epoch: QuiesceEpoch) -> bool {
         let mut q = PriorityQueue::new();
-        for lock in self.epoch_locks(){
-            let weight = unsafe {std::mem::transmute::<&EpochLock, usize>(lock)};
-            q.push(lock, weight);
+        for lock in self.epoch_locks() {
+            let weight = unsafe { std::mem::transmute::<&EpochLock, usize>(lock) };
+            let _ = q.push(lock, weight);
         }
         let sorted_vec = q.into_sorted_vec();
         for epoch_lock in sorted_vec.iter() {

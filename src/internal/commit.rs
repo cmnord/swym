@@ -11,8 +11,8 @@ use core::{
     ptr::{self, NonNull},
     sync::atomic::{self, Ordering::Release},
 };
-use swym_htm::{BoundedHtxErr, HardwareTx};
 use priority_queue::PriorityQueue;
+use swym_htm::{BoundedHtxErr, HardwareTx};
 
 const MAX_HTX_RETRIES: u8 = 3;
 
@@ -71,9 +71,9 @@ impl<'tcell> WriteLog<'tcell> {
     #[inline]
     unsafe fn publish(&self, sync_epoch: QuiesceEpoch) {
         let mut q = PriorityQueue::new();
-        for lock in self.epoch_locks(){
+        for lock in self.epoch_locks() {
             let weight = std::mem::transmute::<&EpochLock, usize>(lock);
-            q.push(lock, weight);
+            let _ = q.push(lock, weight);
         }
         let sorted_vec = q.into_sorted_vec();
         sorted_vec.iter()
@@ -201,12 +201,12 @@ impl<'tx, 'tcell> PinRw<'tx, 'tcell> {
         let mut park_status = ParkStatus::NoParked;
         let pin_epoch = self.pin_epoch();
         let mut unlock_until = None;
-        
+
         //SORT LOCKS
         let mut q = PriorityQueue::new();
-        for lock in logs.write_log.epoch_locks(){
-            let weight = unsafe {std::mem::transmute::<&EpochLock, usize>(lock)};
-            q.push(lock, weight);
+        for lock in logs.write_log.epoch_locks() {
+            let weight = unsafe { std::mem::transmute::<&EpochLock, usize>(lock) };
+            let _ = q.push(lock, weight);
         }
         let sorted_vec = q.into_sorted_vec();
         for epoch_lock in sorted_vec.iter() {
