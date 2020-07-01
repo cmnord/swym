@@ -95,7 +95,7 @@ impl<'tcell> ReadLog<'tcell> {
             let _ = q.push(lock, weight);
         }
         let sorted_vec = q.into_sorted_vec();
-        for epoch_lock in sorted_vec.iter() {
+        for epoch_lock in sorted_vec.into_iter() {
             if unlikely!(!pin_epoch.read_write_valid_lockable(epoch_lock)) {
                 return false;
             }

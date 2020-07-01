@@ -76,7 +76,8 @@ impl<'tcell> WriteLog<'tcell> {
             let _ = q.push(lock, weight);
         }
         let sorted_vec = q.into_sorted_vec();
-        sorted_vec.iter()
+        sorted_vec
+            .into_iter()
             .for_each(|epoch_lock| epoch_lock.unlock_publish(sync_epoch))
     }
 
@@ -209,11 +210,11 @@ impl<'tx, 'tcell> PinRw<'tx, 'tcell> {
             let _ = q.push(lock, weight);
         }
         let sorted_vec = q.into_sorted_vec();
-        for epoch_lock in sorted_vec.iter() {
+        for epoch_lock in sorted_vec.into_iter() {
             match epoch_lock.try_lock(pin_epoch) {
                 Some(cur_status) => park_status = park_status.merge(cur_status),
                 None => {
-                    unlock_until = Some(*epoch_lock as *const _);
+                    unlock_until = Some(epoch_lock as *const _);
                     break;
                 }
             }

@@ -278,8 +278,9 @@ impl<'tcell> WriteLog<'tcell> {
         }
         let sorted_vec = q.into_sorted_vec();
         debug_assert!(
-            sorted_vec.iter()
-                .find(|&x| ptr::eq(x, &&dest_tcell.current_epoch))
+            sorted_vec
+                .into_iter()
+                .find(|&x| ptr::eq(x, &dest_tcell.current_epoch))
                 .is_none(),
             "attempt to add `TCell` to the `WriteLog` twice"
         );
