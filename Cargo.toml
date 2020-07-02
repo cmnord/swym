@@ -44,10 +44,10 @@ rand = "0.7.3"
 
 [profile.bench]
 opt-level = 3
-debug = true
+debug = false
 rpath = false
 lto = "fat"
-debug-assertions = true
+debug-assertions = false
 codegen-units = 1
 incremental = false
 overflow-checks = false
