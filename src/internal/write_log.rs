@@ -248,16 +248,15 @@ impl<'tcell> WriteLog<'tcell> {
 
     #[inline]
     pub unsafe fn record_unchecked<T: 'static>(&mut self, dest_tcell: &'tcell TCellErased, val: T) {
-        /*
-            //LOCK SORTING
-            let mut locks: Vec<&EpochLock> = self.epoch_locks().collect();
-            locks.sort_by(|x, y| {
-                std::mem::transmute::<&EpochLock, usize>(x)
-                    .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
-            });
-        */
+        //LOCK SORTING
+        let mut locks: Vec<&EpochLock> = self.epoch_locks().collect();
+        locks.sort_by(|x, y| {
+            std::mem::transmute::<&EpochLock, usize>(x)
+                .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
+        });
         debug_assert!(
-            self.epoch_locks()
+            //self.epoch_locks()
+	    locks.into_iter()
                 .find(|&x| ptr::eq(x, &dest_tcell.current_epoch))
                 .is_none(),
             "attempt to add `TCell` to the `WriteLog` twice"

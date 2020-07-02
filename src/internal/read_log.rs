@@ -88,15 +88,13 @@ impl<'tcell> ReadLog<'tcell> {
 
     #[inline]
     pub fn validate_reads(&self, pin_epoch: QuiesceEpoch) -> bool {
-        /*
-            let mut locks: Vec<&EpochLock> = self.epoch_locks().collect();
-            locks.sort_by(|x, y| unsafe {
-                std::mem::transmute::<&EpochLock, usize>(x)
-                    .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
-            });
-            for epoch_lock in locks {
-        */
-        for epoch_lock in self.epoch_locks() {
+        let mut locks: Vec<&EpochLock> = self.epoch_locks().collect();
+        locks.sort_by(|x, y| unsafe {
+            std::mem::transmute::<&EpochLock, usize>(x)
+                .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
+        });
+        for epoch_lock in locks {
+        //for epoch_lock in self.epoch_locks() {
             if unlikely!(!pin_epoch.read_write_valid_lockable(epoch_lock)) {
                 return false;
             }

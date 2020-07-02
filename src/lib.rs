@@ -87,6 +87,7 @@
 #![deny(rust_2018_compatibility)]
 #![deny(rust_2018_idioms)]
 #![deny(unused_must_use)]
+//#![feature(negative_impls)]
 
 #[macro_use]
 mod internal;
