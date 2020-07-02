@@ -195,17 +195,18 @@ impl<'tx, 'tcell> PinRw<'tx, 'tcell> {
         let pin_epoch = self.pin_epoch();
         let mut unlock_until = None;
 
-        //SORT LOCKS
-        let mut locks: Vec<&EpochLock> = logs.write_log.epoch_locks().collect();
-        locks.sort_by(|x, y| unsafe {
-            std::mem::transmute::<&EpochLock, usize>(x)
-                .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
-        });
-        for epoch_lock in locks {
+        /*
+            //SORT LOCKS
+            let mut locks: Vec<&EpochLock> = logs.write_log.epoch_locks().collect();
+            locks.sort_by(|x, y| unsafe {
+                std::mem::transmute::<&EpochLock, usize>(x)
+                    .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
+            });
+            for epoch_lock in locks {
+        */
+        for epoch_lock in logs.write_log.epoch_locks() {
             match epoch_lock.try_lock(pin_epoch) {
-                Some(cur_status) => {
-                    park_status = park_status.merge(cur_status);
-                }
+                Some(cur_status) => park_status = park_status.merge(cur_status),
                 None => {
                     unlock_until = Some(epoch_lock as *const _);
                     break;
@@ -236,13 +237,18 @@ impl<'tx, 'tcell> PinRw<'tx, 'tcell> {
     #[cold]
     #[inline(never)]
     fn write_log_lock_failure(self, unlock_until: *const EpochLock) -> bool {
-        let mut locks: Vec<&EpochLock> = self.logs().write_log.epoch_locks().collect();
-        locks.sort_by(|x, y| unsafe {
-            std::mem::transmute::<&EpochLock, usize>(x)
-                .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
-        });
-        locks
-            .into_iter()
+        /*
+            let mut locks: Vec<&EpochLock> = self.logs().write_log.epoch_locks().collect();
+            locks.sort_by(|x, y| unsafe {
+                std::mem::transmute::<&EpochLock, usize>(x)
+                    .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
+            });
+            locks
+                .into_iter()
+        */
+        self.logs()
+            .write_log
+            .epoch_locks()
             .take_while(move |&e| !ptr::eq(e, unlock_until))
             .for_each(|epoch_lock| unsafe { epoch_lock.unlock_undo() });
         false
@@ -280,12 +286,17 @@ impl<'tx, 'tcell> PinRw<'tx, 'tcell> {
     #[cold]
     unsafe fn validation_failure(self) -> bool {
         // on fail unlock the write set
+        /*
         let mut locks: Vec<&EpochLock> = self.logs().write_log.epoch_locks().collect();
         locks.sort_by(|x, y| {
             std::mem::transmute::<&EpochLock, usize>(x)
                 .cmp(&std::mem::transmute::<&EpochLock, usize>(y))
         });
-        locks.iter().for_each(|epoch_lock| epoch_lock.unlock_undo());
+        locks.iter()*/
+        self.logs()
+            .write_log
+            .epoch_locks()
+            .for_each(|epoch_lock| epoch_lock.unlock_undo());
         false
     }
 }
